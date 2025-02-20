@@ -722,7 +722,7 @@ PlayerSettings:
   m_RenderingPath: 1
   m_MobileRenderingPath: 1
   metroPackageName: CGE310-Clicker
-  metroPackageVersion: 
+  metroPackageVersion: 1.0.0.0
   metroCertificatePath: 
   metroCertificatePassword: 
   metroCertificateSubject: 
@@ -730,7 +730,7 @@ PlayerSettings:
   metroCertificateNotAfter: 0000000000000000
   metroApplicationDescription: CGE310-Clicker
   wsaImages: {}
-  metroTileShortName: 
+  metroTileShortName: CGE310-Clicker
   metroTileShowName: 0
   metroMediumTileShowName: 0
   metroLargeTileShowName: 0
