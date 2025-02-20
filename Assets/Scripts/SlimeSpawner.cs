@@ -18,7 +18,7 @@ public class SlimeSpawner : MonoBehaviour
 
         Vector2 spawnPosition = GetValidSpawnPosition();
         GameObject slime = slimeFactory.CreateSlime(spawnPosition); // Use factory
-        slime.GetComponent<Slime>().SetSpawner(this); // Link to spawner
+        //slime.GetComponent<Slime>().SetSpawner(this); // Link to spawner
         m_CurrentSlimes++;
     }
 

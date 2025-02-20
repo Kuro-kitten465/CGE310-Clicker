@@ -2,54 +2,99 @@ using UnityEngine;
 
 public class Slime : MonoBehaviour
 {
-    public float speed = 2f;
-    private Vector2 m_TargetPosition;
-    private Vector2 m_Offset;
-
-    void Start()
+    [Header("Movement Settings")]
+    [SerializeField] private float moveSpeed = 5f;
+    [SerializeField] private float minDistance = 0.1f;
+    
+    [Header("Boundary Settings")]
+    [SerializeField] private float boundaryLeft = -8f;
+    [SerializeField] private float boundaryRight = 8f;
+    [SerializeField] private float boundaryTop = 4f;
+    [SerializeField] private float boundaryBottom = -4f;
+    
+    [Header("Collision Avoidance")]
+    [SerializeField] private float avoidanceRadius = 1f;
+    [SerializeField] private LayerMask slimeLayer;
+    
+    private Camera mainCamera;
+    private Vector3 targetPosition;
+    
+    private void Start()
     {
-        // Get random offset to prevent slimes from stacking
-        m_Offset = new Vector2(Random.Range(-0.5f, 0.5f), Random.Range(-0.5f, 0.5f));
+        mainCamera = Camera.main;
+        targetPosition = transform.position;
     }
-
-    private SlimeSpawner m_Spawner;
-
-    public void SetSpawner(SlimeSpawner spawner)
+    
+    private void Update()
     {
-        m_Spawner = spawner;
-    }
-
-    void Update()
-    {
-        // Get cursor position
-        Vector2 mousePosition = (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition);
-
-        // Apply random offset
-        m_TargetPosition = mousePosition + m_Offset;
-
-        // Clamp to screen bounds
-        Vector2 screenBounds = GetScreenBounds();
-        m_TargetPosition.x = Mathf.Clamp(m_TargetPosition.x, -screenBounds.x, screenBounds.x);
-        m_TargetPosition.y = Mathf.Clamp(m_TargetPosition.y, -screenBounds.y, screenBounds.y);
-
-        // Move slime
-        transform.position = Vector2.MoveTowards(transform.position, m_TargetPosition, speed * Time.deltaTime);
-    }
-
-    // Get screen bounds in world units
-    Vector2 GetScreenBounds()
-    {
-        Camera cam = Camera.main;
-        Vector3 screenSize = cam.ScreenToWorldPoint(new Vector3(Screen.width, Screen.height, 0));
-        return new Vector2(screenSize.x - 0.5f, screenSize.y - 0.5f); // Add padding
-    }
-
-    void OnMouseDown()
-    {
-        if (m_Spawner != null)
+        // Get mouse position in world coordinates
+        Vector3 mousePos = Input.mousePosition;
+        mousePos.z = -mainCamera.transform.position.z;
+        Vector3 worldPosition = mainCamera.ScreenToWorldPoint(mousePos);
+        worldPosition.z = 0f;
+        
+        // Clamp target position within boundaries
+        worldPosition.x = Mathf.Clamp(worldPosition.x, boundaryLeft, boundaryRight);
+        worldPosition.y = Mathf.Clamp(worldPosition.y, boundaryBottom, boundaryTop);
+        
+        // Update target position
+        targetPosition = worldPosition;
+        
+        // Calculate movement direction
+        Vector3 moveDirection = (targetPosition - transform.position).normalized;
+        
+        // Apply collision avoidance
+        Vector3 avoidanceForce = CalculateAvoidanceForce();
+        moveDirection += avoidanceForce;
+        moveDirection.Normalize();
+        
+        // Move towards target position while avoiding others
+        if (Vector3.Distance(transform.position, targetPosition) > minDistance)
         {
-            m_Spawner.OnSlimeDestroyed();
+            Vector3 newPosition = transform.position + moveDirection * moveSpeed * Time.deltaTime;
+            
+            // Clamp the new position within boundaries
+            newPosition.x = Mathf.Clamp(newPosition.x, boundaryLeft, boundaryRight);
+            newPosition.y = Mathf.Clamp(newPosition.y, boundaryBottom, boundaryTop);
+            
+            transform.position = newPosition;
         }
-        Destroy(gameObject);
+    }
+    
+    private Vector3 CalculateAvoidanceForce()
+    {
+        Vector3 avoidanceForce = Vector3.zero;
+        Collider2D[] nearbySlimes = Physics2D.OverlapCircleAll(transform.position, avoidanceRadius, slimeLayer);
+        
+        foreach (Collider2D other in nearbySlimes)
+        {
+            if (other.gameObject != gameObject)
+            {
+                Vector3 awayFromSlime = transform.position - other.transform.position;
+                float distance = awayFromSlime.magnitude;
+                
+                // The closer the slime, the stronger the avoidance force
+                float forceMagnitude = 1 - (distance / avoidanceRadius);
+                avoidanceForce += awayFromSlime.normalized * forceMagnitude;
+            }
+        }
+        
+        return avoidanceForce;
+    }
+    
+    // Optional: Visualize the boundaries and avoidance radius in the editor
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireCube(
+            new Vector3((boundaryLeft + boundaryRight) / 2, (boundaryTop + boundaryBottom) / 2, 0),
+            new Vector3(boundaryRight - boundaryLeft, boundaryTop - boundaryBottom, 0)
+        );
+        
+        if (Application.isPlaying)
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(transform.position, avoidanceRadius);
+        }
     }
 }
