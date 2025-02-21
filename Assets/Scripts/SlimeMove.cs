@@ -6,11 +6,10 @@ public class SlimeMove : MonoBehaviour
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private float minDistance = 0.1f;
     
-    [Header("Boundary Settings")]
-    [SerializeField] private float boundaryLeft = -8f;
-    [SerializeField] private float boundaryRight = 8f;
-    [SerializeField] private float boundaryTop = 4f;
-    [SerializeField] private float boundaryBottom = -4f;
+    private float boundaryLeft;
+    private float boundaryRight;
+    private float boundaryTop;
+    private float boundaryBottom;
     
     [Header("Collision Avoidance")]
     [SerializeField] private float avoidanceRadius = 1f;
@@ -18,7 +17,15 @@ public class SlimeMove : MonoBehaviour
     
     private Camera mainCamera;
     private Vector3 targetPosition;
-    
+
+    private void Awake()
+    {
+        boundaryLeft = GameManager.BoundaryLeft;
+        boundaryRight = GameManager.BoundaryRight;
+        boundaryTop = GameManager.BoundaryTop;
+        boundaryBottom = GameManager.BoundaryBottom;
+    }
+
     private void Start()
     {
         mainCamera = Camera.main;

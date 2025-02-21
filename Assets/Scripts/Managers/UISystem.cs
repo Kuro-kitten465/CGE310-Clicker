@@ -19,7 +19,7 @@ public class UISystem : MonoBehaviour
 
     public void UpdateExperienceBar()
     {
-        levelText.text = GameManager.Instance.playerStats.level.ToString();
+        levelText.text = "Lvl" + GameManager.Instance.playerStats.level.ToString();
         experienceBar.value = GameManager.Instance.playerStats.experience;
         experienceBar.maxValue = GameManager.Instance.playerStats.level * 10f;
     }

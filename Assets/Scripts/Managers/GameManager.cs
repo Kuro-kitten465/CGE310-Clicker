@@ -6,6 +6,16 @@ public class GameManager : MonoSingleton<GameManager>
     [Header("References")]
     [SerializeField] private LayerMask slimeLayer;
     [SerializeField] private float clickRadius = 1f;
+    [Header("Boundary Settings")]
+    [SerializeField] private float boundaryLeft = -8f;
+    [SerializeField] private float boundaryRight = 8f;
+    [SerializeField] private float boundaryTop = 4f;
+    [SerializeField] private float boundaryBottom = -4f;
+
+    public static float BoundaryLeft => Instance.boundaryLeft;
+    public static float BoundaryRight => Instance.boundaryRight;
+    public static float BoundaryTop => Instance.boundaryTop;
+    public static float BoundaryBottom => Instance.boundaryBottom;
     
     public PlayerStats playerStats = new PlayerStats();
 

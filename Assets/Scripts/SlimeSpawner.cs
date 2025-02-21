@@ -1,37 +1,117 @@
+using System.Collections;
 using UnityEngine;
 
 public class SlimeSpawner : MonoBehaviour
 {
-    public SlimeFactory slimeFactory;  // Reference to the factory
-    public float spawnRate = 2f;
-    public int maxSlimes = 10;
-    private int m_CurrentSlimes = 0;
+    [Header("Slime Prefabs")]
+    [SerializeField] private GameObject smallSlimePrefab;
+    [SerializeField] private GameObject mediumSlimePrefab;
+    [SerializeField] private GameObject largeSlimePrefab;
+    [SerializeField] private GameObject hugeSlimePrefab;
+    
+    [Header("Spawn Settings")]
+    [SerializeField] private float spawnInterval = 1f;
+    [SerializeField] private int maxNormalSlimes = 20;
+    [SerializeField] private bool isHugeMode = false;
 
-    void Start()
+    private float spawnTimer;
+
+    private void Update()
     {
-        InvokeRepeating(nameof(SpawnSlime), 1f, spawnRate);
+        if (!isHugeMode)
+        {
+            HandleNormalSpawning();
+        }
     }
 
-    void SpawnSlime()
+    private void HandleNormalSpawning()
     {
-        if (m_CurrentSlimes >= maxSlimes) return;
-
-        Vector2 spawnPosition = GetValidSpawnPosition();
-        GameObject slime = slimeFactory.CreateSlime(spawnPosition); // Use factory
-        //slime.GetComponent<Slime>().SetSpawner(this); // Link to spawner
-        m_CurrentSlimes++;
+        spawnTimer += Time.deltaTime;
+        if (spawnTimer >= spawnInterval)
+        {
+            spawnTimer = 0f;
+            SpawnSlimeIfNeeded();
+        }
     }
 
-    Vector2 GetValidSpawnPosition()
+    private void SpawnSlimeIfNeeded()
     {
-        Camera cam = Camera.main;
-        float x = Random.Range(0.1f, 0.9f);
-        float y = Random.Range(0.1f, 0.9f);
-        return cam.ViewportToWorldPoint(new Vector2(x, y));
+        int currentSlimeCount = GameObject.FindGameObjectsWithTag("Slime").Length;
+        if (currentSlimeCount < maxNormalSlimes)
+        {
+            SpawnSlimeBasedOnLevel();
+        }
     }
 
-    public void OnSlimeDestroyed()
+    private void SpawnSlimeBasedOnLevel()
     {
-        m_CurrentSlimes--;
+        int level = GameManager.Instance.playerStats.level;
+        GameObject prefabToSpawn;
+
+        if (level >= 30)
+        {
+            StartHugeSlimeMode();
+            return;
+        }
+        else if (level >= 20)
+        {
+            prefabToSpawn = largeSlimePrefab;
+        }
+        else if (level >= 10)
+        {
+            prefabToSpawn = mediumSlimePrefab;
+        }
+        else
+        {
+            prefabToSpawn = smallSlimePrefab;
+        }
+
+        Vector3 spawnPosition = GetRandomSpawnPosition();
+        Instantiate(prefabToSpawn, spawnPosition, Quaternion.identity);
+    }
+
+    private IEnumerator HugeSlimeMode()
+    {
+        isHugeMode = true;
+
+        // Clear existing slimes
+        GameObject[] existingSlimes = GameObject.FindGameObjectsWithTag("Slime");
+        foreach (GameObject slime in existingSlimes)
+        {
+            Destroy(slime);
+        }
+
+        yield return new WaitForSeconds(2f); // Dramatic pause
+
+        // Spawn huge slime
+        Vector3 spawnPosition = new Vector3(0, 0, 0); // Spawn in center
+        Instantiate(hugeSlimePrefab, spawnPosition, Quaternion.identity);
+
+        // Wait until huge slime is defeated
+        while (GameObject.FindGameObjectsWithTag("Slime").Length > 0)
+        {
+            yield return new WaitForSeconds(0.5f);
+        }
+
+        // Award level up and restart
+        GameManager.Instance.playerStats.level++;
+        isHugeMode = false;
+    }
+
+    public void StartHugeSlimeMode()
+    {
+        if (!isHugeMode)
+        {
+            StartCoroutine(HugeSlimeMode());
+        }
+    }
+
+    private Vector3 GetRandomSpawnPosition()
+    {
+        return new Vector3(
+            Random.Range(-8f, 8f),
+            Random.Range(-4f, 4f),
+            0f
+        );
     }
 }

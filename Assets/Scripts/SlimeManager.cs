@@ -3,17 +3,18 @@ using UnityEngine.Events;
 
 public class SlimeManager : MonoBehaviour
 {
-    [Header("Slime Settings")]
-    [SerializeField] private float maxHealth = 1f;
     private float currentHealth;
 
     [Header("Drop Settings")]
     [SerializeField] private float baseJuiceDrop = 1f;
     [SerializeField] private float baseExpDrop = 1f;
 
-    private void Start()
+    private SlimeData data;
+
+    public void Initialize(SlimeData slimeData)
     {
-        currentHealth = maxHealth;
+        data = slimeData;
+        currentHealth = data.health;
     }
 
     public void TakeDamage(float damage)
