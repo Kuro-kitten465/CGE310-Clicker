@@ -14,7 +14,38 @@ public class SlimeSpawner : MonoBehaviour
     [SerializeField] private int maxNormalSlimes = 20;
     [SerializeField] private bool isHugeMode = false;
 
+    [Header("Base Stats")]
+    [SerializeField] private float smallSlimeBaseHP = 1f;
+    [SerializeField] private float mediumSlimeBaseHP = 3f;
+    [SerializeField] private float largeSlimeBaseHP = 5f;
+    [SerializeField] private float hugeSlimeBaseHP = 20f;
+    [SerializeField] private float smallSlimeBaseExp = 1f;
+    [SerializeField] private float mediumSlimeBaseExp = 3f;
+    [SerializeField] private float largeSlimeBaseExp = 5f;
+    [SerializeField] private float hugeSlimeBaseExp = 0f;
+    [SerializeField] private int smallSlimeBaseJuice = 1;
+    [SerializeField] private int mediumSlimeBaseJuice = 2;
+    [SerializeField] private int largeSlimeBaseJuice = 3;
+    [SerializeField] private int hugeSlimeBaseJuice = 5;
+
+    private int hugeSlimesDefeated = 0;
+    private float statMultiplier = 1f;
     private float spawnTimer;
+
+    public Color[] colors = new Color[]
+    {
+        SlimeColor.GreenColor,
+        SlimeColor.BlueColor,
+        SlimeColor.RedColor,
+        SlimeColor.YellowColor,
+        SlimeColor.PurpleColor,
+        SlimeColor.OrangeColor
+    };
+
+    private void Start()
+    {
+        UpdateStatMultiplier();
+    }
 
     private void Update()
     {
@@ -22,6 +53,12 @@ public class SlimeSpawner : MonoBehaviour
         {
             HandleNormalSpawning();
         }
+    }
+
+    private void UpdateStatMultiplier()
+    {
+        // Each huge slime defeated increases multiplier by 10
+        statMultiplier = Mathf.Pow(10, hugeSlimesDefeated);
     }
 
     private void HandleNormalSpawning()
@@ -43,10 +80,29 @@ public class SlimeSpawner : MonoBehaviour
         }
     }
 
+    private void ConfigureSlimeStats(GameObject slime, float baseHP, float baseExp, int baseJuice)
+    {
+        SlimeManager slimeManager = slime.GetComponent<SlimeManager>();
+        if (slimeManager != null)
+        {
+            float scaledHP = baseHP * statMultiplier;
+            float scaledExp = baseExp * statMultiplier;
+            float scaledJuice = baseExp * statMultiplier;
+            slimeManager.Initialize(new SlimeData() {
+                health = scaledHP,
+                expReward = scaledExp,
+                juiceReward = Mathf.RoundToInt(scaledJuice)
+            });
+        }
+    }
+
     private void SpawnSlimeBasedOnLevel()
     {
-        int level = GameManager.Instance.playerStats.level;
+        int level = GameManager.Instance.playerStats.level % 31;
         GameObject prefabToSpawn;
+        float baseHP;
+        float baseExp;
+        int baseJuice;
 
         if (level >= 30)
         {
@@ -56,18 +112,33 @@ public class SlimeSpawner : MonoBehaviour
         else if (level >= 20)
         {
             prefabToSpawn = largeSlimePrefab;
+            baseHP = largeSlimeBaseHP;
+            baseExp = largeSlimeBaseExp;
+            baseJuice = largeSlimeBaseJuice;
         }
         else if (level >= 10)
         {
             prefabToSpawn = mediumSlimePrefab;
+            baseHP = mediumSlimeBaseHP;
+            baseExp = mediumSlimeBaseExp;
+            baseJuice = mediumSlimeBaseJuice;
         }
         else
         {
             prefabToSpawn = smallSlimePrefab;
+            baseHP = smallSlimeBaseHP;
+            baseExp = smallSlimeBaseExp;
+            baseJuice = smallSlimeBaseJuice;
         }
 
         Vector3 spawnPosition = GetRandomSpawnPosition();
-        Instantiate(prefabToSpawn, spawnPosition, Quaternion.identity);
+        GameObject newSlime = Instantiate(prefabToSpawn, spawnPosition, Quaternion.identity);
+        var slimeRenderer = newSlime.GetComponent<SpriteRenderer>();
+        if (slimeRenderer != null)
+        {
+            slimeRenderer.color = colors[Random.Range(0, colors.Length)];
+        }
+        ConfigureSlimeStats(newSlime, baseHP, baseExp, baseJuice);
     }
 
     private IEnumerator HugeSlimeMode()
@@ -85,7 +156,13 @@ public class SlimeSpawner : MonoBehaviour
 
         // Spawn huge slime
         Vector3 spawnPosition = new Vector3(0, 0, 0); // Spawn in center
-        Instantiate(hugeSlimePrefab, spawnPosition, Quaternion.identity);
+        GameObject hugeSlime = Instantiate(hugeSlimePrefab, spawnPosition, Quaternion.identity);
+        var slimeRenderer = hugeSlime.GetComponent<SpriteRenderer>();
+        if (slimeRenderer != null)
+        {
+            slimeRenderer.color = colors[Random.Range(0, colors.Length)];
+        }
+        ConfigureSlimeStats(hugeSlime, hugeSlimeBaseHP, hugeSlimeBaseExp, hugeSlimeBaseJuice);
 
         // Wait until huge slime is defeated
         while (GameObject.FindGameObjectsWithTag("Slime").Length > 0)
@@ -94,6 +171,8 @@ public class SlimeSpawner : MonoBehaviour
         }
 
         // Award level up and restart
+        hugeSlimesDefeated++;
+        UpdateStatMultiplier();
         GameManager.Instance.playerStats.level++;
         isHugeMode = false;
     }

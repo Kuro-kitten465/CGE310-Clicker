@@ -1,13 +1,14 @@
 using UnityEngine;
-using UnityEngine.Events;
 
 public class SlimeManager : MonoBehaviour
 {
     private float currentHealth;
+    public float CurrentHealth => currentHealth;
 
     [Header("Drop Settings")]
     [SerializeField] private float baseJuiceDrop = 1f;
     [SerializeField] private float baseExpDrop = 1f;
+    [SerializeField] private AudioSource slimeHitSound;
 
     private SlimeData data;
 
@@ -15,12 +16,15 @@ public class SlimeManager : MonoBehaviour
     {
         data = slimeData;
         currentHealth = data.health;
+        baseExpDrop = data.expReward;
+        baseJuiceDrop = data.juiceReward;
     }
 
     public void TakeDamage(float damage)
     {
         currentHealth -= damage;
-        
+        slimeHitSound.Play();
+
         if (currentHealth <= 0)
         {
             DropResources();
